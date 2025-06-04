@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tradeUp - Login / Signup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        h2 {
+            color: #1c1e21;
+            margin-bottom: 20px;
+        }
+        .form-section {
+            margin-bottom: 25px;
+        }
+        .form-section input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        .form-section button {
+            width: 100%;
+            padding: 12px;
+            background-color: #1877f2; /* Facebook blue inspiration */
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .form-section button:hover {
+            background-color: #166fe5;
+        }
+        .toggle-form {
+            margin-top: 20px;
+            color: #606770;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .toggle-form:hover {
+            color: #1877f2;
+        }
+        #signupFormSection {
+            display: none; /* Hide signup form by default */
+        }
+        .error-message {
+            color: red;
+            font-size: 0.9em;
+            margin-top: -10px;
+            margin-bottom: 10px;
+            text-align: left;
+            min-height: 1em;
+        }
+        .form-server-error {
+            color: red;
+            font-weight: bold;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="loginFormSection" class="form-section">
+            <h2>Login to tradeUp</h2>
+            <form id="loginForm">
+                <input type="email" id="loginEmail" placeholder="Email address" required>
+                <div class="error-message" id="loginEmailError"></div>
+                <input type="password" id="loginPassword" placeholder="Password" required>
+                <div class="error-message" id="loginPasswordError"></div>
+                <div class="form-server-error" id="loginServerError"></div>
+                <button type="submit">Log In</button>
+            </form>
+            <div class="toggle-form" onclick="toggleForms()">Don't have an account? Sign Up</div>
+        </div>
+
+        <div id="signupFormSection" class="form-section">
+            <h2>Sign Up for tradeUp</h2>
+            <form id="signupForm">
+                <input type="text" id="signupName" placeholder="Full Name" required>
+                <div class="error-message" id="signupNameError"></div>
+                <input type="email" id="signupEmail" placeholder="Email address" required>
+                <div class="error-message" id="signupEmailError"></div>
+                <input type="password" id="signupPassword" placeholder="New Password" required>
+                <div class="error-message" id="signupPasswordError"></div>
+                <div class="form-server-error" id="signupServerError"></div>
+                <button type="submit">Sign Up</button>
+            </form>
+            <div class="toggle-form" onclick="toggleForms()">Already have an account? Log In</div>
+        </div>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const loginFormSection = document.getElementById('loginFormSection');
+        const signupFormSection = document.getElementById('signupFormSection');
+
+        function toggleForms() {
+            if (loginFormSection.style.display === 'none') {
+                loginFormSection.style.display = 'block';
+                signupFormSection.style.display = 'none';
+            } else {
+                loginFormSection.style.display = 'none';
+                signupFormSection.style.display = 'block';
+            }
+            clearErrorMessages();
+        }
+
+        function clearErrorMessages() {
+            document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+            document.querySelectorAll('.form-server-error').forEach(el => el.textContent = '');
+        }
+
+        function validateEmail(email) {
+            const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+            return re.test(String(email).toLowerCase());
+        }
+
+        function validatePassword(password) {
+            return password.length >= 6;
+        }
+
+        // Handle Login Form Submission
+        loginForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            clearErrorMessages();
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            let valid = true;
+            if (!validateEmail(email)) {
+                document.getElementById('loginEmailError').textContent = 'Please enter a valid email address.';
+                valid = false;
+            }
+            if (!validatePassword(password)) {
+                document.getElementById('loginPasswordError').textContent = 'Password must be at least 6 characters long.';
+                valid = false;
+            }
+
+            if (valid) {
+                try {
+                    const response = await fetch('http://localhost:3000/api/auth/login', { // CHANGED: Updated URL
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email, password }),
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        console.log('Login successful:', data);
+                        // --- IMPORTANT: Store the user object in localStorage ---
+                        localStorage.setItem('currentUser', JSON.stringify(data.user)); 
+
+                        window.location.href = '/dashboard.html';
+                    } else {
+                        const serverErrorDiv = document.getElementById('loginServerError');
+                        serverErrorDiv.textContent = data.message || 'Login failed. Please check your credentials.';
+                        console.error('Login error:', data.message || response.statusText);
+                    }
+                } catch (error) {
+                    const serverErrorDiv = document.getElementById('loginServerError');
+                    serverErrorDiv.textContent = 'Could not connect to the server. Is the backend running?';
+                    console.error('Network or fetch error during login:', error);
+                }
+            }
+        });
+
+        // Handle Signup Form Submission
+        signupForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            clearErrorMessages();
+
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+
+            let valid = true;
+            if (name.trim() === '') {
+                document.getElementById('signupNameError').textContent = 'Full Name is required.';
+                valid = false;
+            }
+            if (!validateEmail(email)) {
+                document.getElementById('signupEmailError').textContent = 'Please enter a valid email address.';
+                valid = false;
+            }
+            if (!validatePassword(password)) {
+                document.getElementById('signupPasswordError').textContent = 'Password must be at least 6 characters long.';
+                valid = false;
+            }
+
+            if (valid) {
+                try {
+                    const response = await fetch('http://localhost:3000/api/auth/signup', { // CHANGED: Updated URL
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ name, email, password }),
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        console.log('Signup successful:', data);
+                        // --- IMPORTANT: Store the user object in localStorage ---
+                        localStorage.setItem('currentUser', JSON.stringify(data.user)); 
+
+                        window.location.href = '/dashboard.html';
+                    } else {
+                        const serverErrorDiv = document.getElementById('signupServerError');
+                        serverErrorDiv.textContent = data.message || 'Signup failed. Please try again.';
+                        console.error('Signup error:', data.message || response.statusText);
+                    }
+                } catch (error) {
+                    const serverErrorDiv = document.getElementById('signupServerError');
+                    serverErrorDiv.textContent = 'Could not connect to the server. Is the backend running?';
+                    console.error('Network or fetch error during signup:', error);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
