@@ -2,6 +2,9 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
+
+const initWebSocket = require('./src/websocket');
 
 // Import modularized components
 const { db, DB_PATH } = require('./src/database/db'); // Database connection and schema, and DB_PATH
@@ -16,6 +19,10 @@ const messageRoutes = require('./src/routes/messages'); // NEW: Import message r
 
 const app = express();
 const PORT = 3000;
+const server = http.createServer(app);
+const { sendToUser, broadcast } = initWebSocket(server);
+app.locals.sendToUser = sendToUser;
+app.locals.broadcast = broadcast;
 
 // Middleware to parse JSON
 app.use(express.json());
@@ -42,7 +49,7 @@ app.get('*', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`🚀 TradeUp server running at http://localhost:${PORT}`);
     console.log(`Database connected at ${DB_PATH}`); // Now using the exported DB_PATH
     console.log(`Access frontend at http://localhost:${PORT}/index.html`);
