@@ -226,6 +226,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageList = document.getElementById('messageList');
     const sendMessageForm = document.getElementById('sendMessageForm');
     const messageInput = document.getElementById('messageInput');
+    const startConversationBtn = document.getElementById('startConversationBtn');
+    const newConversationControls = document.getElementById('newConversationControls');
+    const contactSelect = document.getElementById('contactSelect');
+    const confirmStartConversationBtn = document.getElementById('confirmStartConversationBtn');
 
 
     let editingPostId = null;
@@ -1556,6 +1560,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Populate contact dropdown for starting a conversation
+    async function populateContactSelect() {
+        const contacts = await fetchContactsData();
+        contacts.sort((a, b) => a.name.localeCompare(b.name));
+        contactSelect.innerHTML = '<option value="">Select Contact</option>';
+        if (contacts.length === 0) {
+            contactSelect.innerHTML += '<option value="" disabled>No contacts available</option>';
+            return;
+        }
+        contacts.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.name;
+            opt.dataset.name = c.name;
+            opt.dataset.email = c.email;
+            opt.dataset.profilePictureUrl = c.profilePictureUrl || '';
+            contactSelect.appendChild(opt);
+        });
+    }
+
     // MODIFIED: Handle Create Dealroom Form Submission (now sends invite)
     createDealroomForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -2016,6 +2040,49 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error sending message:', error);
             alert(`Error: ${error.message}`);
+        }
+    });
+
+    startConversationBtn.addEventListener('click', async () => {
+        await populateContactSelect();
+        startConversationBtn.classList.add('hidden');
+        newConversationControls.classList.remove('hidden');
+    });
+
+    contactSelect.addEventListener('change', () => {
+        confirmStartConversationBtn.disabled = !contactSelect.value;
+    });
+
+    confirmStartConversationBtn.addEventListener('click', async () => {
+        const selectedOption = contactSelect.options[contactSelect.selectedIndex];
+        if (!selectedOption) return;
+        const partner = {
+            id: parseInt(selectedOption.value),
+            name: selectedOption.dataset.name,
+            email: selectedOption.dataset.email,
+            profilePictureUrl: selectedOption.dataset.profilePictureUrl
+        };
+
+        try {
+            const res = await fetch('/api/messages/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user1Id: user.id, user2Id: partner.id })
+            });
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.message || 'Failed to start conversation.');
+            }
+            const data = await res.json();
+            newConversationControls.classList.add('hidden');
+            startConversationBtn.classList.remove('hidden');
+            contactSelect.value = '';
+            confirmStartConversationBtn.disabled = true;
+            await fetchAndRenderConversations();
+            openChatThread(data.conversationId, partner);
+        } catch (error) {
+            console.error('Error starting conversation:', error);
+            alert('Failed to start conversation');
         }
     });
 

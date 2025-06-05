@@ -26,6 +26,23 @@ async function getOrCreateConversation(user1Id, user2Id) {
     return conversation.id;
 }
 
+// POST /api/messages/start - Get or create a conversation and return its ID
+router.post('/start', async (req, res) => {
+    const { user1Id, user2Id } = req.body;
+
+    if (!user1Id || !user2Id) {
+        return res.status(400).json({ message: 'Both user IDs are required.' });
+    }
+
+    try {
+        const conversationId = await getOrCreateConversation(user1Id, user2Id);
+        res.json({ conversationId });
+    } catch (error) {
+        console.error('Error starting conversation:', error);
+        res.status(500).json({ message: 'Server error starting conversation.' });
+    }
+});
+
 // POST /api/messages - Send a new message
 router.post('/', async (req, res) => {
     const { conversationId, senderId, receiverId, content, dealroomId } = req.body;
