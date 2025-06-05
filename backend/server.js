@@ -15,7 +15,8 @@ const notificationRoutes = require('./src/routes/notifications');
 const messageRoutes = require('./src/routes/messages'); // NEW: Import message routes
 
 const app = express();
-const PORT = 3000;
+// Allow overriding the server port via the PORT environment variable
+const PORT = process.env.PORT || 3000;
 
 // Middleware to parse JSON
 app.use(express.json());
