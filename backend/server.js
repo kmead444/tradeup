@@ -15,29 +15,26 @@ const postRoutes = require('./src/routes/posts');
 const dealroomRoutes = require('./src/routes/dealrooms');
 const notificationRoutes = require('./src/routes/notifications');
 const messageRoutes = require('./src/routes/messages'); 
-
-
 const app = express();
-
 // Allow overriding the server port via the PORT environment variable
 const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);
 
-const { sendToUser, broadcast } = initWebSocket(server);
+const { init, sendToUser, broadcast } = require('./src/websocket');
+init(server); 
 app.locals.sendToUser = sendToUser;
 app.locals.broadcast = broadcast;
 
-setupWebSocket(server);
-
-websocket.init(server);
-app.locals.sendToUser = websocket.sendToUser;
-app.locals.broadcast = websocket.broadcast;
-
-
 // Middleware to parse JSON
 app.use(express.json());
+
+// Ensure 'uploads' directory exists before serving static files
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
 // Serve static files from the 'uploads' directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(uploadsDir));
 
 // Serve frontend files
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
