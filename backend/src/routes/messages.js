@@ -169,7 +169,7 @@ router.get('/thread/:conversationId', (req, res) => {
             WHERE m.conversationId = ?
             ORDER BY m.timestamp ASC
         `);
-        const messages = stmt.all(conversationId);
+        const messages = messagesStmt.all(conversationId);
         res.json(messages);
     }
     catch (error) {
