@@ -3,7 +3,6 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
-const initWebSocket = require('./src/websocket');
 
 // Import modularized components
 const { db, DB_PATH } = require('./src/database/db'); // Database connection and schema, and DB_PATH
