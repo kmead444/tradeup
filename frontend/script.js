@@ -1945,7 +1945,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (content === '' || !activeConversationId) return;
 
         const payload = {
-            type: 'new_message',
+            type: 'send_message',
             conversationId: activeConversationId,
             senderId: user.id,
             receiverId: currentPartner.id,
