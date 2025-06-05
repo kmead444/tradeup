@@ -2,6 +2,7 @@
 const express = require('express');
 const { db } = require('../database/db');
 const { createNotification } = require('../utils/notifications');
+const { sendToUser, broadcast } = require('../websocket');
 
 const router = express.Router();
 
@@ -76,6 +77,27 @@ router.post('/', async (req, res) => {
             // CORRECTED: Removed 'message_read_id' as it's not in the schema, relies on composite PK
             db.prepare(`INSERT OR IGNORE INTO message_reads (messageId, userId, readAt) VALUES (?, ?, CURRENT_TIMESTAMP)`).run(info.lastInsertRowid, senderId);
 
+            const messagePayload = db.prepare(`
+                SELECT id, conversationId, dealroomId, senderId, content, timestamp
+                FROM messages WHERE id = ?
+            `).get(info.lastInsertRowid);
+
+            if (dealroomId) {
+                const participants = db.prepare('SELECT userId FROM dealroom_participants WHERE dealroomId = ?').all(dealroomId).map(p => p.userId);
+                broadcast(participants, 'new_dealroom_message', messagePayload);
+            } else if (actualConversationId) {
+                let targetReceiverId = receiverId;
+                if (!targetReceiverId) {
+                    const convo = db.prepare('SELECT user1Id, user2Id FROM conversations WHERE id = ?').get(actualConversationId);
+                    if (convo) {
+                        targetReceiverId = convo.user1Id === senderId ? convo.user2Id : convo.user1Id;
+                    }
+                }
+                if (targetReceiverId) {
+                    sendToUser(targetReceiverId, 'new_message', messagePayload);
+                }
+                sendToUser(senderId, 'new_message', messagePayload);
+            }
 
             res.status(201).json({ message: 'Message sent successfully!', messageId: info.lastInsertRowid });
         } else {
