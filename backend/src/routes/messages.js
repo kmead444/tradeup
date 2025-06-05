@@ -97,23 +97,18 @@ router.post('/', async (req, res) => {
                     }
                 }
                 if (targetReceiverId) {
-                    sendToUser(targetReceiverId, 'new_message', messagePayload);
+                    sendToUser(targetReceiverId, {
+                        type: 'new_message',
+                        conversationId: actualConversationId,
+                        message: messagePayload
+                    });
                 }
-                sendToUser(senderId, 'new_message', messagePayload);
-
-            const { timestamp } = db.prepare('SELECT timestamp FROM messages WHERE id = ?').get(info.lastInsertRowid);
-            const payload = { senderId, content, timestamp };
-            if (actualConversationId) payload.conversationId = actualConversationId;
-            if (dealroomId) payload.dealroomId = dealroomId;
-
-            if (actualConversationId && receiverId) {
-                sendToUser(receiverId, { type: 'new_message', data: payload });
-            } else if (dealroomId) {
-                const ids = db.prepare('SELECT userId FROM dealroom_participants WHERE dealroomId = ?').all(dealroomId).map(r => r.userId);
-                broadcast(ids, { type: 'new_message', data: payload });
-
+                sendToUser(senderId, {
+                    type: 'new_message',
+                    conversationId: actualConversationId,
+                    message: messagePayload
+                });
             }
-        } // <-- Add this closing brace to fix the block
 
             res.status(201).json({ message: 'Message sent successfully!', messageId: info.lastInsertRowid });
         } else {
