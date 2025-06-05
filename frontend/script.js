@@ -254,6 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- View Switching Logic ---
     function showScreen(screenId) {
+        localStorage.setItem('lastView', screenId);
         // Hide all screens
         dashboardView.classList.add('hidden');
         contactsView.classList.add('hidden');
@@ -294,8 +295,36 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchAndRenderNotifications();
     }
 
-    // Initial load: show dashboard
-    showScreen('dashboardView');
+    // Initial load: restore last viewed screen if available
+    function restoreLastState() {
+        const lastView = localStorage.getItem('lastView');
+        if (lastView) {
+            showScreen(lastView);
+            if (lastView === 'messagesView') {
+                const savedConvoId = localStorage.getItem('activeConversationId');
+                if (savedConvoId) {
+                    fetch(`/api/messages/conversations/${user.id}`)
+                        .then(res => res.json())
+                        .then(convos => {
+                            const convo = convos.find(c => c.id === parseInt(savedConvoId));
+                            if (convo) {
+                                const partner = convo.user1.id === user.id ? convo.user2 : convo.user1;
+                                openChatThread(parseInt(savedConvoId), partner);
+                            }
+                        })
+                        .catch(err => console.error('Error restoring conversation:', err));
+                }
+            } else if (lastView === 'dealroomsView') {
+                const savedDealroomId = localStorage.getItem('activeDealroomId');
+                if (savedDealroomId) {
+                    openDealroomChat(parseInt(savedDealroomId));
+                }
+            }
+        } else {
+            showScreen('dashboardView');
+        }
+    }
+    restoreLastState();
 
     // Nav Tab Event Listeners
     dashboardTab.addEventListener('click', () => showScreen('dashboardView'));
@@ -1056,6 +1085,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // NEW: Function to open a specific dealroom's chat and details
     async function openDealroomChat(dealroomId) {
+        localStorage.setItem('activeDealroomId', dealroomId);
+        localStorage.removeItem('activeConversationId');
         try {
             const response = await fetch(`/api/dealrooms/${dealroomId}/details/${user.id}`);
             if (!response.ok) {
@@ -1897,6 +1928,8 @@ document.addEventListener('DOMContentLoaded', () => {
     async function openChatThread(conversationId, partner) {
         activeConversationId = conversationId;
         currentPartner = partner; // Store partner info
+        localStorage.setItem('activeConversationId', conversationId);
+        localStorage.removeItem('activeDealroomId');
 
         messagePartnerName.textContent = `Chat with ${escapeHtml(partner.name)}`;
         threadPartnerProfilePic.src = partner.profilePictureUrl || 'https://via.placeholder.com/60/0000FF/FFFFFF?text=U';
@@ -2011,5 +2044,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function logout() {
   localStorage.removeItem('currentUser');
+  localStorage.removeItem('lastView');
+  localStorage.removeItem('activeConversationId');
+  localStorage.removeItem('activeDealroomId');
   window.location.href = '/';
 }
