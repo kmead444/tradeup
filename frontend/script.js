@@ -220,6 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // NEW: Message Elements
     const conversationList = document.getElementById('conversationList');
+    const conversationSearchInput = document.getElementById('conversationSearchInput');
     const messageThreadContainer = document.getElementById('messageThreadContainer');
     const threadPartnerProfilePic = document.getElementById('threadPartnerProfilePic');
     const messagePartnerName = document.getElementById('messagePartnerName');
@@ -230,6 +231,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const newConversationControls = document.getElementById('newConversationControls');
     const contactSelect = document.getElementById('contactSelect');
     const confirmStartConversationBtn = document.getElementById('confirmStartConversationBtn');
+
+    if (conversationSearchInput) {
+        conversationSearchInput.addEventListener('input', () => {
+            const query = conversationSearchInput.value.trim().toLowerCase();
+            const items = conversationList.querySelectorAll('.conversation-item');
+            items.forEach(item => {
+                const name = (item.dataset.partnerName || '').toLowerCase();
+                const email = (item.dataset.partnerEmail || '').toLowerCase();
+                const lastMsg = (item.dataset.lastMessageContent || '').toLowerCase();
+                if (!query || name.includes(query) || email.includes(query) || lastMsg.includes(query)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    }
 
 
     let editingPostId = null;
@@ -1931,6 +1949,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 convoItem.dataset.partnerName = partner.name;
                 convoItem.dataset.partnerEmail = partner.email;
                 convoItem.dataset.partnerProfilePic = partner.profilePictureUrl || defaultProfilePic;
+                convoItem.dataset.lastMessageContent = convo.lastMessageContent || '';
 
                 convoItem.innerHTML = `
                     <img src="${partner.profilePictureUrl || defaultProfilePic}" alt="Partner Profile Picture">
