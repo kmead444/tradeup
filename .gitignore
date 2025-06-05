@@ -1,4 +1,9 @@
 node_modules/
-.env
-uploads/
+
+backend/uploads/
+
+
+
+
 # Add other ignores as needed
+

@@ -1,6 +1,10 @@
 // backend/server.js
 const express = require('express');
 const path = require('path');
+
+const fs = require('fs');
+
+
 const http = require('http');
 
 // Import modularized components
@@ -46,6 +50,10 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
 });
 
+// Create HTTP and WebSocket servers
+const server = http.createServer(app);
+websocket.init(server);
+
 // Start server
 server.listen(PORT, () => {
     console.log(`🚀 TradeUp server running at http://localhost:${PORT}`);
@@ -57,5 +65,8 @@ server.listen(PORT, () => {
 process.on('SIGINT', () => {
     console.log('Closing database connection...');
     db.close();
+    if (server) {
+        server.close();
+    }
     process.exit(0);
 });
