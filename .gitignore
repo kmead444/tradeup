@@ -1,5 +1,6 @@
 node_modules/
 
+
 # dotenv environment files
 .env
 
@@ -8,4 +9,13 @@ npm-debug.log*
 
 # OS-generated files
 .DS_Store
-Thumbs.db
+Thumbs
+.db
+backend/uploads/
+
+
+
+
+# Add other ignores as needed
+
+

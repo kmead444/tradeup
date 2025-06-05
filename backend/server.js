@@ -2,21 +2,39 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
+const initWebSocket = require('./src/websocket');
 
 // Import modularized components
 const { db, DB_PATH } = require('./src/database/db'); // Database connection and schema, and DB_PATH
-const { uploadProfilePicture, uploadDealroomDocument } = require('./src/middleware/upload'); // CHANGED: Import both upload middlewares
+const { uploadProfilePicture } = require('./src/middleware/upload'); // Import upload middleware for profile pictures
 const authRoutes = require('./src/routes/auth');
 const userRoutes = require('./src/routes/users');
 const contactRoutes = require('./src/routes/contacts');
 const postRoutes = require('./src/routes/posts');
 const dealroomRoutes = require('./src/routes/dealrooms');
 const notificationRoutes = require('./src/routes/notifications');
-const messageRoutes = require('./src/routes/messages'); // NEW: Import message routes
+const messageRoutes = require('./src/routes/messages'); 
+
 
 const app = express();
+
 // Allow overriding the server port via the PORT environment variable
 const PORT = process.env.PORT || 3000;
+
+const PORT = 3000;
+const server = http.createServer(app);
+
+const { sendToUser, broadcast } = initWebSocket(server);
+app.locals.sendToUser = sendToUser;
+app.locals.broadcast = broadcast;
+
+setupWebSocket(server);
+
+websocket.init(server);
+app.locals.sendToUser = websocket.sendToUser;
+app.locals.broadcast = websocket.broadcast;
+
 
 // Middleware to parse JSON
 app.use(express.json());
@@ -42,8 +60,12 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
 });
 
+// Create HTTP and WebSocket servers
+const server = http.createServer(app);
+websocket.init(server);
+
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`🚀 TradeUp server running at http://localhost:${PORT}`);
     console.log(`Database connected at ${DB_PATH}`); // Now using the exported DB_PATH
     console.log(`Access frontend at http://localhost:${PORT}/index.html`);
@@ -53,5 +75,8 @@ app.listen(PORT, () => {
 process.on('SIGINT', () => {
     console.log('Closing database connection...');
     db.close();
+    if (server) {
+        server.close();
+    }
     process.exit(0);
 });
