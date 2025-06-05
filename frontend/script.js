@@ -89,6 +89,48 @@ document.addEventListener('DOMContentLoaded', () => {
         return window.location.href = '/';
     }
 
+    let socket;
+    let socketReady = false;
+
+    function initWebSocket() {
+        socket = new WebSocket(`ws://${window.location.host}`);
+        socket.addEventListener('open', () => {
+            socketReady = true;
+            socket.send(JSON.stringify({ type: 'auth', userId: user.id }));
+        });
+        socket.addEventListener('close', () => { socketReady = false; });
+        socket.addEventListener('message', handleSocketMessage);
+    }
+
+    function handleSocketMessage(event) {
+        let msg;
+        try { msg = JSON.parse(event.data); } catch (err) { return; }
+        if (msg.type === 'new_message') {
+            if (activeConversationId && msg.conversationId === activeConversationId) {
+                fetchAndRenderMessages(activeConversationId);
+                markConversationAsRead(activeConversationId);
+            } else {
+                fetchAndRenderConversations();
+                fetchAndRenderNotifications();
+            }
+        } else if (msg.type === 'new_dealroom_message') {
+            if (activeDealroomData && msg.dealroomId === activeDealroomData.dealroom.id) {
+                openDealroomChat(msg.dealroomId);
+            } else {
+                fetchAndRenderDealrooms();
+                fetchAndRenderNotifications();
+            }
+        }
+    }
+
+    function sendViaSocket(data) {
+        if (socketReady) {
+            socket.send(JSON.stringify(data));
+            return true;
+        }
+        return false;
+    }
+
     // References to main view containers
     const dashboardView = document.getElementById('dashboardView');
     const contactsView = document.getElementById('contactsView');
@@ -192,6 +234,23 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeConversationId = null; // NEW: To track the currently open conversation
     let currentPartner = null; // NEW: To store information about the partner in the active conversation
     let activeDealroomData = null; // NEW: To store the currently active dealroom data
+
+    const socket = new WebSocket(location.origin.replace(/^http/, 'ws'));
+    socket.addEventListener('open', () => {
+        socket.send(JSON.stringify({ type: 'auth', userId: user.id }));
+    });
+    socket.addEventListener('message', (event) => {
+        let evt;
+        try { evt = JSON.parse(event.data); } catch { return; }
+        if (evt.type === 'new_message') {
+            if (activeConversationId && evt.conversationId === activeConversationId) {
+                fetchAndRenderMessages(activeConversationId);
+            } else {
+                fetchAndRenderConversations();
+                fetchAndRenderNotifications();
+            }
+        }
+    });
 
 
     // --- View Switching Logic ---
@@ -1024,6 +1083,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const content = dealroomMessageInput.value.trim();
                 if (content === '') return;
 
+                const payload = {
+                    type: 'new_dealroom_message',
+                    dealroomId: dealroomData.dealroom.id,
+                    senderId: user.id,
+                    content
+                };
+
+                if (sendViaSocket(payload)) {
+                    dealroomMessageInput.value = '';
+                    return;
+                }
+
                 try {
                     const msgResponse = await fetch('/api/messages', {
                         method: 'POST',
@@ -1044,7 +1115,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     dealroomMessageInput.value = '';
                     // Re-fetch dealroom details to get updated messages
-                    openDealroomChat(dealroomData.dealroom.id); 
+                    openDealroomChat(dealroomData.dealroom.id);
                 } catch (error) {
                     console.error('Error sending dealroom message:', error);
                     alert(`Error: ${error.message}`);
@@ -1874,6 +1945,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const content = messageInput.value.trim();
         if (content === '' || !activeConversationId) return;
 
+        const payload = {
+
+            type: 'send_message',
+            conversationId: activeConversationId,
+            senderId: user.id,
+            receiverId: currentPartner.id,
+            content: 
+        };
+
+            type: 'new_message',
+            conversationId: activeConversationId,
+            senderId: user.id,
+            receiverId: currentPartner.id,
+            content
+        };
+
+        if (sendViaSocket(payload)) {
+            messageInput.value = '';
+            return;
+        }
+
         try {
             const response = await fetch('/api/messages', {
                 method: 'POST',
@@ -1883,7 +1975,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     conversationId: activeConversationId,
                     senderId: user.id,
-                    receiverId: currentPartner.id, // Ensure receiverId is passed
+                    receiverId: currentPartner.id,
                     content: content
                 }),
             });
@@ -1893,13 +1985,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorData.message || 'Failed to send message.');
             }
 
+
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify(payload));
             messageInput.value = '';
-            await fetchAndRenderMessages(activeConversationId);
-            fetchAndRenderConversations(); // Refresh conversation list for last message update
-            fetchAndRenderNotifications(); // Refresh notifications
-        } catch (error) {
-            console.error('Error sending message:', error);
-            alert(`Error: ${error.message}`);
+        } else {
+            try {
+                const response = await fetch('/api/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to send message.');
+                }
+
+                messageInput.value = '';
+                await fetchAndRenderMessages(activeConversationId);
+                fetchAndRenderConversations();
+                fetchAndRenderNotifications();
+            } catch (error) {
+                console.error('Error sending message:', error);
+                alert(`Error: ${error.message}`);
+            }
         }
     });
 
@@ -1923,6 +2035,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchAndRenderContactsPreview();
     fetchAndRenderPosts();
     fetchAndRenderNotifications(); // Initial fetch of notifications
+    initWebSocket();
 });
 
 function logout() {

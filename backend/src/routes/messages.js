@@ -3,6 +3,10 @@ const express = require('express');
 const { db } = require('../database/db');
 const { createNotification } = require('../utils/notifications');
 
+const { sendToUser, broadcast } = require('../websocket');
+const { sendToUser, broadcast } = require('../utils/websocketHelpers');
+
+
 const router = express.Router();
 
 // Helper to get conversation ID or create a new one
@@ -76,6 +80,40 @@ router.post('/', async (req, res) => {
             // CORRECTED: Removed 'message_read_id' as it's not in the schema, relies on composite PK
             db.prepare(`INSERT OR IGNORE INTO message_reads (messageId, userId, readAt) VALUES (?, ?, CURRENT_TIMESTAMP)`).run(info.lastInsertRowid, senderId);
 
+
+            const messagePayload = db.prepare(`
+                SELECT id, conversationId, dealroomId, senderId, content, timestamp
+                FROM messages WHERE id = ?
+            `).get(info.lastInsertRowid);
+
+            if (dealroomId) {
+                const participants = db.prepare('SELECT userId FROM dealroom_participants WHERE dealroomId = ?').all(dealroomId).map(p => p.userId);
+                broadcast(participants, 'new_dealroom_message', messagePayload);
+            } else if (actualConversationId) {
+                let targetReceiverId = receiverId;
+                if (!targetReceiverId) {
+                    const convo = db.prepare('SELECT user1Id, user2Id FROM conversations WHERE id = ?').get(actualConversationId);
+                    if (convo) {
+                        targetReceiverId = convo.user1Id === senderId ? convo.user2Id : convo.user1Id;
+                    }
+                }
+                if (targetReceiverId) {
+                    sendToUser(targetReceiverId, 'new_message', messagePayload);
+                }
+                sendToUser(senderId, 'new_message', messagePayload);
+
+            const { timestamp } = db.prepare('SELECT timestamp FROM messages WHERE id = ?').get(info.lastInsertRowid);
+            const payload = { senderId, content, timestamp };
+            if (actualConversationId) payload.conversationId = actualConversationId;
+            if (dealroomId) payload.dealroomId = dealroomId;
+
+            if (actualConversationId && receiverId) {
+                sendToUser(receiverId, { type: 'new_message', data: payload });
+            } else if (dealroomId) {
+                const ids = db.prepare('SELECT userId FROM dealroom_participants WHERE dealroomId = ?').all(dealroomId).map(r => r.userId);
+                broadcast(ids, { type: 'new_message', data: payload });
+
+            }
 
             res.status(201).json({ message: 'Message sent successfully!', messageId: info.lastInsertRowid });
         } else {
@@ -169,7 +207,7 @@ router.get('/thread/:conversationId', (req, res) => {
             WHERE m.conversationId = ?
             ORDER BY m.timestamp ASC
         `);
-        const messages = stmt.all(conversationId);
+        const messages = messagesStmt.all(conversationId);
         res.json(messages);
     }
     catch (error) {
