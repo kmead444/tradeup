@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
+
 // Import modularized components
 const { db, DB_PATH } = require('./src/database/db'); // Database connection and schema, and DB_PATH
 const { uploadProfilePicture } = require('./src/middleware/upload'); // Import upload middleware for profile pictures
@@ -12,12 +13,14 @@ const contactRoutes = require('./src/routes/contacts');
 const postRoutes = require('./src/routes/posts');
 const dealroomRoutes = require('./src/routes/dealrooms');
 const notificationRoutes = require('./src/routes/notifications');
-const messageRoutes = require('./src/routes/messages'); // NEW: Import message routes
-const websocket = require('./src/websocket');
+const messageRoutes = require('./src/routes/messages'); 
+
 
 const app = express();
 const PORT = 3000;
 const server = http.createServer(app);
+setupWebSocket(server);
+
 websocket.init(server);
 app.locals.sendToUser = websocket.sendToUser;
 app.locals.broadcast = websocket.broadcast;
