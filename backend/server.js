@@ -13,12 +13,14 @@ const postRoutes = require('./src/routes/posts');
 const dealroomRoutes = require('./src/routes/dealrooms');
 const notificationRoutes = require('./src/routes/notifications');
 const messageRoutes = require('./src/routes/messages'); // NEW: Import message routes
-const { setupWebSocketServer } = require('./src/utils/websocketServer');
+const websocket = require('./src/websocket');
 
 const app = express();
 const PORT = 3000;
 const server = http.createServer(app);
-setupWebSocketServer(server);
+websocket.init(server);
+app.locals.sendToUser = websocket.sendToUser;
+app.locals.broadcast = websocket.broadcast;
 
 // Middleware to parse JSON
 app.use(express.json());
