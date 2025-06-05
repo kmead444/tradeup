@@ -1,4 +1,3 @@
-
 const WebSocket = require('ws');
 
 function initWebSocket(server) {
