@@ -114,6 +114,7 @@ router.post('/', async (req, res) => {
                 broadcast(ids, { type: 'new_message', data: payload });
 
             }
+        } // <-- Add this closing brace to fix the block
 
             res.status(201).json({ message: 'Message sent successfully!', messageId: info.lastInsertRowid });
         } else {

@@ -43,7 +43,8 @@ module.exports = initWebSocket;
 // backend/src/websocket.js
 const WebSocket = require('ws');
 
-const clients = new Map(); // userId => Set<WebSocket>
+// const clients = new Map(); // userId => Set<WebSocket>
+// Use the main clients Map defined below
 
 function setupWebSocket(server) {
     const wss = new WebSocket.Server({ server });
@@ -101,7 +102,7 @@ module.exports = {
 const { WebSocketServer } = require('ws');
 const { db } = require('./database/db');
 const { createNotification } = require('./utils/notifications');
-
+// const clients = new Map(); // Already declared above
 const clients = new Map();
 let wss;
 

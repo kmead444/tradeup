@@ -21,8 +21,6 @@ const app = express();
 
 // Allow overriding the server port via the PORT environment variable
 const PORT = process.env.PORT || 3000;
-
-const PORT = 3000;
 const server = http.createServer(app);
 
 const { sendToUser, broadcast } = initWebSocket(server);
@@ -59,10 +57,6 @@ app.use('/api/messages', messageRoutes); // NEW: Add message routes
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
 });
-
-// Create HTTP and WebSocket servers
-const server = http.createServer(app);
-websocket.init(server);
 
 // Start server
 server.listen(PORT, () => {

@@ -89,7 +89,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return window.location.href = '/';
     }
 
-    let socket;
     let socketReady = false;
 
     function initWebSocket() {
@@ -1946,14 +1945,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (content === '' || !activeConversationId) return;
 
         const payload = {
-
-            type: 'send_message',
-            conversationId: activeConversationId,
-            senderId: user.id,
-            receiverId: currentPartner.id,
-            content: 
-        };
-
             type: 'new_message',
             conversationId: activeConversationId,
             senderId: user.id,
@@ -1985,33 +1976,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorData.message || 'Failed to send message.');
             }
 
-
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify(payload));
             messageInput.value = '';
-        } else {
-            try {
-                const response = await fetch('/api/messages', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Failed to send message.');
-                }
-
-                messageInput.value = '';
-                await fetchAndRenderMessages(activeConversationId);
-                fetchAndRenderConversations();
-                fetchAndRenderNotifications();
-            } catch (error) {
-                console.error('Error sending message:', error);
-                alert(`Error: ${error.message}`);
-            }
+            await fetchAndRenderMessages(activeConversationId);
+            fetchAndRenderConversations();
+            fetchAndRenderNotifications();
+        } catch (error) {
+            console.error('Error sending message:', error);
+            alert(`Error: ${error.message}`);
         }
     });
 
