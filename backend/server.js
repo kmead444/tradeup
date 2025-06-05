@@ -1,15 +1,11 @@
 // backend/server.js
 const express = require('express');
 const path = require('path');
-
 const fs = require('fs');
-
-
 const http = require('http');
-
 // Import modularized components
 const { db, DB_PATH } = require('./src/database/db'); // Database connection and schema, and DB_PATH
-const { uploadProfilePicture, uploadDealroomDocument } = require('./src/middleware/upload'); // CHANGED: Import both upload middlewares
+const { uploadProfilePicture } = require('./src/middleware/upload'); // Import upload middleware for profile pictures
 const authRoutes = require('./src/routes/auth');
 const userRoutes = require('./src/routes/users');
 const contactRoutes = require('./src/routes/contacts');
