@@ -4,7 +4,8 @@ const fs = require('fs');
 const Database = require('better-sqlite3');
 
 // Path to the SQLite database file
-const DB_PATH = path.join(__dirname, '..', '..', 'data', 'tradeup.db'); // Adjust path as needed
+// Allow overriding the SQLite database location via the DB_PATH environment variable
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', '..', 'data', 'tradeup.db');
 
 // Ensure the data directory exists
 const dataDir = path.dirname(DB_PATH);

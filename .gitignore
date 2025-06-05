@@ -1,9 +1,21 @@
 node_modules/
 
+
+# dotenv environment files
+.env
+
+# logs
+npm-debug.log*
+
+# OS-generated files
+.DS_Store
+Thumbs
+.db
 backend/uploads/
 
 
 
 
 # Add other ignores as needed
+
 

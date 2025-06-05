@@ -18,6 +18,10 @@ const messageRoutes = require('./src/routes/messages');
 
 
 const app = express();
+
+// Allow overriding the server port via the PORT environment variable
+const PORT = process.env.PORT || 3000;
+
 const PORT = 3000;
 const server = http.createServer(app);
 
@@ -30,6 +34,7 @@ setupWebSocket(server);
 websocket.init(server);
 app.locals.sendToUser = websocket.sendToUser;
 app.locals.broadcast = websocket.broadcast;
+
 
 // Middleware to parse JSON
 app.use(express.json());
