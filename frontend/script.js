@@ -1062,6 +1062,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    window.deleteDealroom = async function(dealroomId) {
+        if (!confirm('Are you sure you want to delete this dealroom?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/dealrooms/${dealroomId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId: user.id
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to delete dealroom.');
+            }
+
+            alert('Dealroom deleted successfully!');
+
+            if (activeDealroomData && activeDealroomData.dealroom.id === parseInt(dealroomId)) {
+                activeDealroomDetails.style.display = 'none';
+                activeDealroomData = null;
+                localStorage.removeItem('activeDealroomId');
+            }
+
+            await fetchAndRenderDealrooms();
+        } catch (error) {
+            console.error('Error deleting dealroom:', error);
+            alert(`Error: ${error.message}`);
+        }
+    };
+
     feedContainer.addEventListener('scroll', () => {
       if (feedContainer.scrollTop + feedContainer.clientHeight >= feedContainer.scrollHeight - 5) {
         console.log("Reached bottom of feed (or near it)");
@@ -1088,6 +1124,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     dealroomCard.className = 'dealroom-card';
                     dealroomCard.dataset.dealroomId = dealroom.dealroomId; // Use dealroomId
                     dealroomCard.innerHTML = `
+                        <div class="dealroom-actions"><button class="delete-button" onclick="event.stopPropagation(); deleteDealroom('${dealroom.dealroomId}')">Delete</button></div>
                         <p>Deal Title: <span class="dealroom-emails">${escapeHtml(dealroom.title)}</span></p>
                         <p style="font-size: 0.8em; color: #bbb;">Buyer: ${escapeHtml(dealroom.buyerName)} (${escapeHtml(dealroom.buyerEmail)})</p>
                         <p style="font-size: 0.8em; color: #bbb;">Seller: ${escapeHtml(dealroom.sellerName)} (${escapeHtml(dealroom.sellerEmail)})</p>

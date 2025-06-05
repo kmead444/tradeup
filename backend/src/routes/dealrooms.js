@@ -642,5 +642,40 @@ router.get('/user/:userId', (req, res) => {
     }
 });
 
+// NEW API: Delete a dealroom
+router.delete('/:dealroomId', (req, res) => {
+    const dealroomId = parseInt(req.params.dealroomId);
+    const { userId } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ message: 'User ID is required for deletion.' });
+    }
+
+    try {
+        const getDealroomStmt = db.prepare('SELECT buyerId, sellerId FROM dealrooms WHERE id = ?');
+        const dealroom = getDealroomStmt.get(dealroomId);
+
+        if (!dealroom) {
+            return res.status(404).json({ message: 'Dealroom not found.' });
+        }
+
+        if (dealroom.buyerId !== userId && dealroom.sellerId !== userId) {
+            return res.status(403).json({ message: 'Unauthorized: Only participants can delete this dealroom.' });
+        }
+
+        const deleteStmt = db.prepare('DELETE FROM dealrooms WHERE id = ?');
+        const info = deleteStmt.run(dealroomId);
+
+        if (info.changes === 0) {
+            return res.status(404).json({ message: 'Dealroom not found or not deleted.' });
+        }
+
+        res.json({ message: 'Dealroom deleted successfully!' });
+    } catch (error) {
+        console.error('Error deleting dealroom:', error);
+        res.status(500).json({ message: 'Server error deleting dealroom.' });
+    }
+});
+
 
 module.exports = router;
