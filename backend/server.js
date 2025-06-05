@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
+const initWebSocket = require('./src/websocket');
 
 // Import modularized components
 const { db, DB_PATH } = require('./src/database/db'); // Database connection and schema, and DB_PATH
@@ -19,6 +20,11 @@ const messageRoutes = require('./src/routes/messages');
 const app = express();
 const PORT = 3000;
 const server = http.createServer(app);
+
+const { sendToUser, broadcast } = initWebSocket(server);
+app.locals.sendToUser = sendToUser;
+app.locals.broadcast = broadcast;
+
 setupWebSocket(server);
 
 websocket.init(server);
