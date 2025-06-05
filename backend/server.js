@@ -1,7 +1,10 @@
 // backend/server.js
 const express = require('express');
 const path = require('path');
+
 const fs = require('fs');
+
+
 const http = require('http');
 
 // Import modularized components
@@ -18,6 +21,10 @@ const websocket = require('./src/websocket');
 
 const app = express();
 const PORT = 3000;
+const server = http.createServer(app);
+websocket.init(server);
+app.locals.sendToUser = websocket.sendToUser;
+app.locals.broadcast = websocket.broadcast;
 
 // Middleware to parse JSON
 app.use(express.json());
