@@ -480,6 +480,12 @@
         overflow-y: auto;
     }
 
+    .start-convo-form {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+
     .conversation-item {
         display: flex;
         align-items: center;
@@ -969,6 +975,13 @@
     <div id="messagesView" class="hidden messages-layout">
         <section class="conversation-list-container">
             <h2 class="text-xl font-bold mb-3 text-white">Inbox</h2>
+            <div id="startConversationArea">
+                <button id="startConversationBtn" class="submitButton mb-3">Start Conversation</button>
+                <div id="newConversationControls" class="start-convo-form hidden">
+                    <select id="contactSelect" class="message-input"></select>
+                    <button id="confirmStartConversationBtn" class="submitButton" disabled>Start</button>
+                </div>
+            </div>
             <div id="conversationList">
                 <p style="text-align: center; color: #888;">No conversations yet.</p>
             </div>
